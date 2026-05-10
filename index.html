@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ClinicAI — Psikolog Asistanı</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --sage: #8faa96;
+    --sage-light: #c4d4c8;
+    --sage-dark: #3d5c44;
+    --cream: #f5f0e8;
+    --warm-white: #faf8f4;
+    --charcoal: #2a2a2a;
+    --muted: #6b7068;
+    --accent: #c17f5a;
+    --border: #ddd8ce;
+    --card-bg: #ffffff;
+    --thinking: #e8f0ea;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--warm-white);
+    color: var(--charcoal);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── Header ── */
+  header {
+    background: var(--cream);
+    border-bottom: 1px solid var(--border);
+    padding: 0 2rem;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .logo-icon {
+    width: 36px; height: 36px;
+    background: var(--sage-dark);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  .logo-icon svg { width: 20px; height: 20px; fill: white; }
+
+  .logo-text {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.25rem;
+    color: var(--sage-dark);
+    letter-spacing: -0.02em;
+  }
+
+  .logo-text span { color: var(--accent); font-style: italic; }
+
+  nav { display: flex; gap: 6px; }
+
+  nav button {
+    background: none;
+    border: none;
+    padding: 7px 14px;
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.85rem;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  nav button:hover, nav button.active {
+    background: var(--sage-light);
+    color: var(--sage-dark);
+    font-weight: 500;
+  }
+
+  /* ── Layout ── */
+  .app {
+    display: flex;
+    flex: 1;
+    height: calc(100vh - 64px);
+  }
+
+  /* ── Sidebar ── */
+  .sidebar {
+    width: 260px;
+    background: var(--cream);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    padding: 1.25rem 1rem;
+    gap: 0.5rem;
+    overflow-y: auto;
+  }
+
+  .sidebar-section {
+    font-size: 0.72rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    padding: 0.75rem 0.5rem 0.25rem;
+  }
+
+  .tool-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    text-align: left;
+    width: 100%;
+    transition: all 0.18s;
+    color: var(--charcoal);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.875rem;
+  }
+
+  .tool-btn:hover { background: var(--sage-light); }
+  .tool-btn.active { background: var(--sage-dark); color: white; }
+  .tool-btn.active .tool-icon { color: white; }
+
+  .tool-icon {
+    font-size: 1rem;
+    width: 20px;
+    text-align: center;
+    color: var(--sage-dark);
+    flex-shrink: 0;
+  }
+
+  /* ── Main ── */
+  .main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* ── Panel ── */
+  .panel {
+    display: none;
+    flex: 1;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .panel.visible { display: flex; }
+
+  /* ── Chat Panel ── */
+  .chat-header {
+    padding: 1.25rem 1.75rem;
+    border-bottom: 1px solid var(--border);
+    background: var(--warm-white);
+  }
+
+  .chat-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.1rem;
+    color: var(--sage-dark);
+  }
+
+  .chat-subtitle {
+    font-size: 0.8rem;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  .messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1.5rem 1.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .msg {
+    display: flex;
+    gap: 12px;
+    max-width: 780px;
+    animation: fadeUp 0.3s ease;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .msg.user { flex-direction: row-reverse; align-self: flex-end; }
+
+  .avatar {
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.8rem;
+    flex-shrink: 0;
+    font-weight: 500;
+  }
+
+  .avatar.ai {
+    background: var(--sage-dark);
+    color: white;
+    font-family: 'Playfair Display', serif;
+  }
+
+  .avatar.user {
+    background: var(--accent);
+    color: white;
+  }
+
+  .bubble {
+    padding: 12px 16px;
+    border-radius: 14px;
+    font-size: 0.9rem;
+    line-height: 1.6;
+    max-width: 600px;
+  }
+
+  .bubble.ai {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-top-left-radius: 4px;
+  }
+
+  .bubble.user {
+    background: var(--sage-dark);
+    color: white;
+    border-top-right-radius: 4px;
+  }
+
+  .bubble ul { padding-left: 1.2rem; margin-top: 6px; }
+  .bubble li { margin-bottom: 4px; }
+  .bubble strong { color: var(--sage-dark); }
+  .bubble.user strong { color: var(--sage-light); }
+
+  .thinking {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    background: var(--thinking);
+    border-radius: 12px;
+    border-top-left-radius: 4px;
+    font-size: 0.82rem;
+    color: var(--sage-dark);
+  }
+
+  .dots span {
+    display: inline-block;
+    width: 6px; height: 6px;
+    background: var(--sage);
+    border-radius: 50%;
+    margin: 0 2px;
+    animation: bounce 1.2s infinite;
+  }
+  .dots span:nth-child(2) { animation-delay: 0.2s; }
+  .dots span:nth-child(3) { animation-delay: 0.4s; }
+
+  @keyframes bounce {
+    0%, 60%, 100% { transform: translateY(0); }
+    30% { transform: translateY(-5px); }
+  }
+
+  /* ── Input bar ── */
+  .input-bar {
+    padding: 1rem 1.75rem 1.25rem;
+    border-top: 1px solid var(--border);
+    background: var(--warm-white);
+  }
+
+  .mode-chips {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+  }
+
+  .chip {
+    padding: 4px 12px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: none;
+    font-size: 0.78rem;
+    color: var(--muted);
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.18s;
+  }
+
+  .chip:hover, .chip.active {
+    background: var(--sage-dark);
+    color: white;
+    border-color: var(--sage-dark);
+  }
+
+  .input-row {
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+  }
+
+  textarea {
+    flex: 1;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 11px 14px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem;
+    resize: none;
+    background: var(--card-bg);
+    color: var(--charcoal);
+    line-height: 1.5;
+    outline: none;
+    transition: border-color 0.2s;
+    min-height: 46px;
+    max-height: 120px;
+  }
+
+  textarea:focus { border-color: var(--sage); }
+
+  .send-btn {
+    width: 46px; height: 46px;
+    border-radius: 12px;
+    background: var(--sage-dark);
+    border: none;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.2s;
+    flex-shrink: 0;
+  }
+
+  .send-btn:hover { background: var(--sage); }
+  .send-btn svg { width: 18px; height: 18px; fill: white; }
+
+  /* ── Notes Panel ── */
+  .notes-panel {
+    flex: 1;
+    padding: 1.75rem;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .notes-panel h2 {
+    font-family: 'Playfair Display', serif;
+    color: var(--sage-dark);
+    font-size: 1.3rem;
+  }
+
+  .notes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+  }
+
+  .note-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1.25rem;
+    cursor: pointer;
+    transition: box-shadow 0.2s, transform 0.2s;
+    position: relative;
+  }
+
+  .note-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.08); transform: translateY(-1px); }
+
+  .note-tag {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 0.72rem;
+    font-weight: 500;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .tag-anksiyete { background: #fce8d5; color: #a05a2c; }
+  .tag-depresyon { background: #dce8f5; color: #2c5a8a; }
+  .tag-travma { background: #f5dce8; color: #8a2c5a; }
+  .tag-genel { background: #e8f5dc; color: #4a8a2c; }
+
+  .note-card h3 { font-size: 0.95rem; font-weight: 500; margin-bottom: 6px; }
+  .note-card p { font-size: 0.82rem; color: var(--muted); line-height: 1.5; }
+  .note-date { font-size: 0.75rem; color: var(--sage); margin-top: 10px; }
+
+  /* ── Tools Panel ── */
+  .tools-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 1rem;
+    padding: 1.75rem;
+  }
+
+  .tool-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1.5rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .tool-card:hover {
+    border-color: var(--sage);
+    box-shadow: 0 4px 16px rgba(63, 92, 68, 0.1);
+  }
+
+  .tool-card-icon {
+    font-size: 1.8rem;
+    margin-bottom: 10px;
+  }
+
+  .tool-card h3 {
+    font-size: 0.95rem;
+    font-weight: 500;
+    margin-bottom: 6px;
+    color: var(--sage-dark);
+  }
+
+  .tool-card p {
+    font-size: 0.82rem;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  /* ── Welcome ── */
+  .welcome {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    text-align: center;
+    padding: 2rem;
+    gap: 1rem;
+  }
+
+  .welcome-icon {
+    font-size: 3rem;
+  }
+
+  .welcome h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.6rem;
+    color: var(--sage-dark);
+  }
+
+  .welcome p {
+    color: var(--muted);
+    font-size: 0.9rem;
+    max-width: 400px;
+    line-height: 1.6;
+  }
+
+  .quick-prompts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    margin-top: 0.5rem;
+  }
+
+  .quick-prompt {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 8px 16px;
+    font-size: 0.83rem;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    color: var(--charcoal);
+    transition: all 0.18s;
+  }
+
+  .quick-prompt:hover {
+    background: var(--sage-dark);
+    color: white;
+    border-color: var(--sage-dark);
+  }
+
+  /* ── Scrollbar ── */
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--sage-light); border-radius: 10px; }
+
+  /* ── Disclaimer ── */
+  .disclaimer {
+    font-size: 0.72rem;
+    color: var(--muted);
+    text-align: center;
+    padding: 0.5rem 1.75rem;
+    border-top: 1px solid var(--border);
+    background: var(--cream);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">
+      <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>
+    </div>
+    <span class="logo-text">Clinic<span>AI</span></span>
+  </div>
+  <nav>
+    <button class="active" onclick="switchPanel('chat', this)">💬 Asistan</button>
+    <button onclick="switchPanel('notes', this)">📋 Notlar</button>
+    <button onclick="switchPanel('tools', this)">🧰 Araçlar</button>
+  </nav>
+</header>
+
+<div class="app">
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-section">Hızlı Modlar</div>
+    <button class="tool-btn active" onclick="setMode('genel', this)">
+      <span class="tool-icon">💡</span> Genel Danışma
+    </button>
+    <button class="tool-btn" onclick="setMode('seans', this)">
+      <span class="tool-icon">🪑</span> Seans Notu
+    </button>
+    <button class="tool-btn" onclick="setMode('tanilama', this)">
+      <span class="tool-icon">🔍</span> Tanılama Desteği
+    </button>
+    <button class="tool-btn" onclick="setMode('egzersiz', this)">
+      <span class="tool-icon">🧘</span> Egzersiz Öner
+    </button>
+    <button class="tool-btn" onclick="setMode('vaka', this)">
+      <span class="tool-icon">📁</span> Vaka Analizi
+    </button>
+
+    <div class="sidebar-section">Kaynaklar</div>
+    <button class="tool-btn" onclick="setMode('dsm', this)">
+      <span class="tool-icon">📖</span> DSM-5 Referans
+    </button>
+    <button class="tool-btn" onclick="setMode('icd', this)">
+      <span class="tool-icon">🏥</span> ICD-11 Kılavuzu
+    </button>
+    <button class="tool-btn" onclick="setMode('cbt', this)">
+      <span class="tool-icon">🧠</span> BDT Teknikleri
+    </button>
+    <button class="tool-btn" onclick="setMode('kriz', this)">
+      <span class="tool-icon">🚨</span> Kriz Protokolü
+    </button>
+  </div>
+
+  <!-- Main -->
+  <div class="main">
+
+    <!-- Chat Panel -->
+    <div class="panel visible" id="panel-chat">
+      <div class="chat-header">
+        <div class="chat-title" id="chat-title">Genel Danışma</div>
+        <div class="chat-subtitle" id="chat-subtitle">Klinik sorularınızı, vaka değerlendirmelerinizi ve pratik destek ihtiyaçlarınızı paylaşın</div>
+      </div>
+
+      <div class="messages" id="messages">
+        <div class="welcome" id="welcome-screen">
+          <div class="welcome-icon">🌿</div>
+          <h2>Merhaba, nasıl yardımcı olabilirim?</h2>
+          <p>Ben ClinicAI — psikologlar için tasarlanmış bir klinik asistanım. Vaka değerlendirmesi, seans notları, tanılama desteği ve egzersiz önerileri konularında yanınızdayım.</p>
+          <div class="quick-prompts">
+            <button class="quick-prompt" onclick="usePrompt('Anksiyete bozukluğu olan bir danışan için BDT egzersiz önerir misin?')">Anksiyete için BDT egzersizi</button>
+            <button class="quick-prompt" onclick="usePrompt('Depresyon tanı kriterlerini DSM-5\'e göre özetle.')">DSM-5 depresyon kriterleri</button>
+            <button class="quick-prompt" onclick="usePrompt('Aktif intihar düşüncesi olan danışan için kriz protokolü nedir?')">Kriz protokolü</button>
+            <button class="quick-prompt" onclick="usePrompt('Seans sonrası not yazılması için bir şablon oluştur.')">Seans notu şablonu</button>
+            <button class="quick-prompt" onclick="usePrompt('Travma geçmişi olan bir danışanla ilk görüşmede neler sorulmalı?')">Travma — ilk görüşme</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="input-bar">
+        <div class="mode-chips">
+          <button class="chip active" onclick="selectChip(this, 'genel')">Genel</button>
+          <button class="chip" onclick="selectChip(this, 'seans')">Seans Notu</button>
+          <button class="chip" onclick="selectChip(this, 'tanilama')">Tanılama</button>
+          <button class="chip" onclick="selectChip(this, 'egzersiz')">Egzersiz</button>
+          <button class="chip" onclick="selectChip(this, 'kriz')">Kriz</button>
+        </div>
+        <div class="input-row">
+          <textarea id="userInput" placeholder="Klinik sorunuzu yazın…" rows="1"
+            onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage()}"
+            oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"></textarea>
+          <button class="send-btn" onclick="sendMessage()">
+            <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="disclaimer">⚠️ ClinicAI klinik karar desteği sunar; tanı koyamaz ve terapistin mesleki yargısının yerini tutamaz.</div>
+    </div>
+
+    <!-- Notes Panel -->
+    <div class="panel" id="panel-notes">
+      <div class="notes-panel">
+        <h2>📋 Klinik Notlar</h2>
+        <p style="font-size:0.85rem;color:var(--muted)">Seans özetleri ve AI destekli notlarınız burada birikir.</p>
+        <div class="notes-grid" id="notes-grid">
+          <div class="note-card">
+            <span class="note-tag tag-anksiyete">Anksiyete</span>
+            <h3>Danışan A — 3. Seans</h3>
+            <p>Sosyal anksiyete belirtileri azalmaya devam ediyor. Nefes egzersizleri düzenli uygulanmış. Bir sonraki hedef: topluluk önünde konuşma kademeli maruz bırakma.</p>
+            <div class="note-date">8 Mayıs 2026</div>
+          </div>
+          <div class="note-card">
+            <span class="note-tag tag-depresyon">Depresyon</span>
+            <h3>Danışan B — İlk Görüşme</h3>
+            <p>PHQ-9 skoru: 14 (orta düzey). Uyku düzensizliği ve anhedoni belirgin. BDT planı hazırlandı, psikiyatri konsültasyonu önerildi.</p>
+            <div class="note-date">6 Mayıs 2026</div>
+          </div>
+          <div class="note-card">
+            <span class="note-tag tag-travma">Travma</span>
+            <h3>Danışan C — EMDR Seans 2</h3>
+            <p>Hedef anı üzerinde ilerleme kaydedildi. SUB skoru 7'den 4'e düştü. Güvenli yer egzersizi güçlendirildi.</p>
+            <div class="note-date">5 Mayıs 2026</div>
+          </div>
+          <div class="note-card" style="border: 1.5px dashed var(--border); background: none; display:flex; align-items:center; justify-content:center; min-height:140px; color:var(--muted); flex-direction:column; gap:8px;">
+            <span style="font-size:1.5rem">+</span>
+            <span style="font-size:0.85rem">Yeni Not Ekle</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tools Panel -->
+    <div class="panel" id="panel-tools">
+      <div style="padding:1.75rem 1.75rem 0.5rem">
+        <h2 style="font-family:'Playfair Display',serif;color:var(--sage-dark);font-size:1.3rem">🧰 Klinik Araçlar</h2>
+        <p style="font-size:0.85rem;color:var(--muted);margin-top:4px">Değerlendirme ve müdahale için hızlı araçlar</p>
+      </div>
+      <div class="tools-grid">
+        <div class="tool-card" onclick="loadTool('phq9')">
+          <div class="tool-card-icon">📊</div>
+          <h3>PHQ-9 Depresyon Ölçeği</h3>
+          <p>Danışanınızın yanıtlarını girin, skor ve klinik yorum alın.</p>
+        </div>
+        <div class="tool-card" onclick="loadTool('gad7')">
+          <div class="tool-card-icon">📈</div>
+          <h3>GAD-7 Anksiyete Ölçeği</h3>
+          <p>Genelleşmiş anksiyete bozukluğu belirtilerini puanlayın.</p>
+        </div>
+        <div class="tool-card" onclick="loadTool('pcl5')">
+          <div class="tool-card-icon">🛡️</div>
+          <h3>PCL-5 Travma Ölçeği</h3>
+          <p>TSSB belirtilerinin şiddetini değerlendirin.</p>
+        </div>
+        <div class="tool-card" onclick="loadTool('seans-sablon')">
+          <div class="tool-card-icon">📝</div>
+          <h3>Seans Notu Şablonu</h3>
+          <p>SOAP veya DAP formatında seans notu oluşturun.</p>
+        </div>
+        <div class="tool-card" onclick="loadTool('kriz')">
+          <div class="tool-card-icon">🚨</div>
+          <h3>Kriz Değerlendirme</h3>
+          <p>İntihar/zarar riski değerlendirme adımları ve protokol.</p>
+        </div>
+        <div class="tool-card" onclick="loadTool('psikoeğitim')">
+          <div class="tool-card-icon">📚</div>
+          <h3>Psikoeğitim İçerikleri</h3>
+          <p>Danışanlarınıza vermek için hazır psikoeğitim metinleri.</p>
+        </div>
+        <div class="tool-card" onclick="loadTool('vaka-formülasyon')">
+          <div class="tool-card-icon">🗂️</div>
+          <h3>Vaka Formülasyonu</h3>
+          <p>BDT veya psikodinamik çerçevede vaka formülasyonu oluşturun.</p>
+        </div>
+        <div class="tool-card" onclick="loadTool('hedef')">
+          <div class="tool-card-icon">🎯</div>
+          <h3>Tedavi Hedefi Oluştur</h3>
+          <p>SMART hedef formatında terapi hedefleri belirleyin.</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  // ── State ──
+  let currentMode = 'genel';
+  let conversationHistory = [];
+  let isLoading = false;
+
+  const modeConfig = {
+    genel: {
+      title: 'Genel Danışma',
+      subtitle: 'Klinik sorularınızı, vaka değerlendirmelerinizi ve pratik destek ihtiyaçlarınızı paylaşın',
+      system: 'Sen ClinicAI adlı bir klinik psikoloji asistanısın. Psikologlar ve ruh sağlığı uzmanlarına destek sağlıyorsun. Yanıtların bilimsel, güncel ve etik olmak zorunda. Her zaman Türkçe yanıt ver. Danışan değil psikolog ile konuştuğunu unutma. Gerektiğinde DSM-5, ICD-11 ve kanıta dayalı tedavi kılavuzlarına referans ver.'
+    },
+    seans: {
+      title: 'Seans Notu Asistanı',
+      subtitle: 'Seans özetlerinizi yapılandırın, SOAP/DAP notları oluşturun',
+      system: 'Sen bir seans notu yazım asistanısın. Psikolog sana seans bilgilerini veriyor, sen SOAP (Sübjektif, Objektif, Değerlendirme, Plan) veya DAP (Veri, Değerlendirme, Plan) formatında profesyonel klinik not oluşturuyorsun. Türkçe, net, klinik dil kullan.'
+    },
+    tanilama: {
+      title: 'Tanılama Desteği',
+      subtitle: 'DSM-5 ve ICD-11 kriterlerine göre diferansiyel tanı desteği',
+      system: 'Sen bir tanılama destek asistanısın. Psikologun tanımladığı belirtiler üzerinden DSM-5 ve ICD-11 kriterlerini referans alarak diferansiyel tanı seçenekleri sunuyorsun. Kesin tanı koyamayacağını vurgula, sadece değerlendirmeye destek ol. Türkçe yanıt ver.'
+    },
+    egzersiz: {
+      title: 'Egzersiz & Müdahale Önerileri',
+      subtitle: 'Kanıta dayalı terapötik egzersizler ve teknikler',
+      system: 'Sen bir terapötik egzersiz asistanısın. Psikologun danışan profili ve hedefine göre BDT, ACT, DBT, EMDR veya mindfulness temelli kanıta dayalı egzersiz ve teknikler öneriyorsun. Adım adım, uygulanabilir öneriler sun. Türkçe yanıt ver.'
+    },
+    vaka: {
+      title: 'Vaka Analizi',
+      subtitle: 'Kapsamlı vaka formülasyonu ve tedavi planlaması desteği',
+      system: 'Sen bir vaka formülasyonu asistanısın. Psikolog vaka bilgilerini paylaşıyor, sen predispozan-presipitan-sürdüren faktörler, koruyucu faktörler ve bütünleşik vaka formülasyonu ile tedavi önerileri sunuyorsun. Türkçe, klinik dil kullan.'
+    },
+    dsm: {
+      title: 'DSM-5 Referans',
+      subtitle: 'DSM-5 tanı kriterleri ve klinik notlar',
+      system: 'Sen bir DSM-5 referans asistanısın. Psikologun sorduğu tanı kategorileri, kriterler ve klinik notlar hakkında DSM-5\'e dayalı doğru, güncel bilgi veriyorsun. Türkçe yanıt ver.'
+    },
+    icd: {
+      title: 'ICD-11 Kılavuzu',
+      subtitle: 'Dünya Sağlık Örgütü ICD-11 referans sistemi',
+      system: 'Sen bir ICD-11 referans asistanısın. Ruh sağlığı bozukluklarının ICD-11 sınıflandırması, kodları ve kriterleri hakkında bilgi veriyorsun. Türkçe yanıt ver.'
+    },
+    cbt: {
+      title: 'BDT Teknikleri',
+      subtitle: 'Bilişsel Davranışçı Terapi teknik kütüphanesi',
+      system: 'Sen bir BDT (Bilişsel Davranışçı Terapi) teknik asistanısın. Belirli belirtiler veya durumlar için uygun BDT teknikleri, formlar ve uygulamalar öneriyorsun. Türkçe yanıt ver.'
+    },
+    kriz: {
+      title: 'Kriz Protokolü',
+      subtitle: 'Acil kriz değerlendirmesi ve müdahale adımları',
+      system: 'Sen bir kriz müdahale protokol asistanısın. İntihar riski, öz zarar veya başkasına zarar riski gibi acil durumlarda psikologun izleyeceği adımları, değerlendirme sorularını ve müdahale protokollerini sunuyorsun. Türkçe, net ve adım adım açıkla.'
+    }
+  };
+
+  // ── Panel Switch ──
+  function switchPanel(name, btn) {
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('visible'));
+    document.getElementById('panel-' + name).classList.add('visible');
+    document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+
+  // ── Mode ──
+  function setMode(mode, btn) {
+    currentMode = mode;
+    document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const cfg = modeConfig[mode];
+    document.getElementById('chat-title').textContent = cfg.title;
+    document.getElementById('chat-subtitle').textContent = cfg.subtitle;
+
+    // Switch to chat panel
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('visible'));
+    document.getElementById('panel-chat').classList.add('visible');
+    document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('nav button')[0].classList.add('active');
+  }
+
+  function selectChip(el, mode) {
+    document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+    currentMode = mode;
+    const cfg = modeConfig[mode];
+    if (cfg) {
+      document.getElementById('chat-title').textContent = cfg.title;
+      document.getElementById('chat-subtitle').textContent = cfg.subtitle;
+    }
+  }
+
+  // ── Quick prompts ──
+  function usePrompt(text) {
+    document.getElementById('userInput').value = text;
+    document.getElementById('userInput').style.height = 'auto';
+    document.getElementById('userInput').style.height = document.getElementById('userInput').scrollHeight + 'px';
+    sendMessage();
+  }
+
+  // ── Send ──
+  async function sendMessage() {
+    const input = document.getElementById('userInput');
+    const text = input.value.trim();
+    if (!text || isLoading) return;
+
+    // Hide welcome
+    const welcome = document.getElementById('welcome-screen');
+    if (welcome) welcome.style.display = 'none';
+
+    input.value = '';
+    input.style.height = 'auto';
+
+    addMessage('user', text);
+    conversationHistory.push({ role: 'user', content: text });
+
+    isLoading = true;
+    const thinkingEl = addThinking();
+
+    try {
+      const cfg = modeConfig[currentMode] || modeConfig.genel;
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1000,
+          system: cfg.system,
+          messages: conversationHistory
+        })
+      });
+
+      const data = await response.json();
+      thinkingEl.remove();
+
+      const reply = data.content?.map(c => c.text || '').join('') || 'Yanıt alınamadı.';
+      conversationHistory.push({ role: 'assistant', content: reply });
+      addMessage('ai', reply);
+    } catch (e) {
+      thinkingEl.remove();
+      addMessage('ai', '⚠️ Bağlantı hatası. Lütfen tekrar deneyin.');
+    }
+
+    isLoading = false;
+  }
+
+  function addMessage(role, text) {
+    const container = document.getElementById('messages');
+    const div = document.createElement('div');
+    div.className = 'msg ' + role;
+
+    const avatar = document.createElement('div');
+    avatar.className = 'avatar ' + role;
+    avatar.textContent = role === 'ai' ? 'AI' : 'Dr';
+
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble ' + role;
+    bubble.innerHTML = formatText(text);
+
+    div.appendChild(avatar);
+    div.appendChild(bubble);
+    container.appendChild(div);
+    container.scrollTop = container.scrollHeight;
+    return div;
+  }
+
+  function addThinking() {
+    const container = document.getElementById('messages');
+    const div = document.createElement('div');
+    div.className = 'msg ai';
+
+    const avatar = document.createElement('div');
+    avatar.className = 'avatar ai';
+    avatar.textContent = 'AI';
+
+    const thinking = document.createElement('div');
+    thinking.className = 'thinking';
+    thinking.innerHTML = 'Düşünüyor <div class="dots"><span></span><span></span><span></span></div>';
+
+    div.appendChild(avatar);
+    div.appendChild(thinking);
+    container.appendChild(div);
+    container.scrollTop = container.scrollHeight;
+    return div;
+  }
+
+  function formatText(text) {
+    // Bold
+    text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    // Newlines to br (after handling lists)
+    text = text.replace(/\n\n/g, '</p><p>');
+    text = text.replace(/\n[-•]\s+/g, '</p><ul><li>').replace(/\n/g, '</li><li>');
+    text = '<p>' + text + '</p>';
+    return text;
+  }
+
+  function loadTool(tool) {
+    const prompts = {
+      'phq9': 'PHQ-9 ölçeğini doldurdum. Danışanım 9 sorudan şu puanları aldı: soru 1: 2, soru 2: 2, soru 3: 1, soru 4: 2, soru 5: 1, soru 6: 0, soru 7: 1, soru 8: 0, soru 9: 0. Toplam skoru ve klinik yorumu ver.',
+      'gad7': 'GAD-7 ölçeğini sana göre dolduracağım. Bana önce soruları listele ve her birini puanlamamı iste.',
+      'pcl5': 'PCL-5 travma ölçeği hakkında bilgi ver ve nasıl uygulanacağını anlat.',
+      'seans-sablon': 'Bana SOAP formatında boş bir seans notu şablonu oluştur. Türkçe, klinik kullanıma uygun olsun.',
+      'kriz': 'İntihar riski değerlendirmesi için adım adım protokol ver. Sorulacak sorular ve izlenecek adımlar dahil.',
+      'psikoeğitim': 'Anksiyete bozukluğu için danışana verilebilecek kısa bir psikoeğitim metni hazırla.',
+      'vaka-formülasyon': 'BDT çerçevesinde vaka formülasyonu için boş bir şablon oluştur. Predispozan, presipitan ve sürdüren faktörler dahil.',
+      'hedef': 'Depresyon tedavisinde kullanılabilecek SMART formatında 3 örnek terapi hedefi yaz.'
+    };
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('visible'));
+    document.getElementById('panel-chat').classList.add('visible');
+    document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('nav button')[0].classList.add('active');
+
+    const welcome = document.getElementById('welcome-screen');
+    if (welcome) welcome.style.display = 'none';
+
+    if (prompts[tool]) {
+      document.getElementById('userInput').value = prompts[tool];
+      sendMessage();
+    }
+  }
+</script>
+</body>
+</html>
